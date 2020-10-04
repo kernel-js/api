@@ -21,7 +21,7 @@ describe('Requests', () => {
     let entity = new Entity();
 
     let result = entity.find(1).getUrlConfig();
-
+    console.log(entity)
     chai.expect(result).to.deep.equal({ method: 'GET', url: 'http://localhost/api/posts/1' });
   });
 

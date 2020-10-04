@@ -31,15 +31,11 @@ export default class QueryModifier {
   public select(fields: Array<string>): Array<string>
   {
     let selectFields: any = {};
-
+    console.log(this.resourceName)
     if (isArray(fields)) {
       selectFields[this.resourceName] = fields.toString()
       return selectFields;
     }
-
-    forOwn(fields, (value: Array<string>, resource) => {
-      selectFields[resource] = value.toString();
-    });
 
     return selectFields;
   }
@@ -67,7 +63,7 @@ export default class QueryModifier {
    * @param  {string} value
    * @returns Array
    */
-  public filter(key: string, value: string): Array<string>
+  public filter(key: string, value: string): any
   {
     let newFilter: any = {};
 

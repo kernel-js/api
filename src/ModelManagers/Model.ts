@@ -329,7 +329,7 @@ export abstract class Model implements ModelSignature {
 
     return this;
   }
-  
+
   /**
    * @param  {Array<string>} ...includes
    * @returns Model
@@ -376,7 +376,7 @@ export abstract class Model implements ModelSignature {
    * @returns Model
    */
   public where(key: string, value: string): Model {
-    this.queryBuilder.filters = this.queryModifier.filter(key, value);
+    this.queryBuilder.filters = this.queryBuilder.filters.concat([this.queryModifier.filter(key, value)]);
     return this;
   }
 
@@ -385,7 +385,7 @@ export abstract class Model implements ModelSignature {
    * @returns Model
    */
   public limit(value: string): Model {
-    this.queryBuilder.filters = this.queryModifier.filter('limit', value);
+    this.where('limit', value);
     return this;
   }
 

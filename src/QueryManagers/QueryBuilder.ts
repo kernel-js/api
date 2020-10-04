@@ -15,7 +15,7 @@ export default class QueryBuilder {
   /**
    * @type {Array<string>}
    */
-  public includes!: Array<string>;
+  public includes: Array<string> = [];
 
   /**
    * @type {string}
@@ -23,14 +23,14 @@ export default class QueryBuilder {
   public sort!: string;
 
   /**
-   * @type {Array<string>}
+   * @type {Array<Record<string, string>>}
    */
-  public filters!: Array<string>;
+  public filters: Array<Record<string, string>> = [];
 
   /**
    * @type {Array<string>}
    */  
-  public fields!: Array<string>;
+  public fields: Array<string> = [];
 
   /**
    * @type {Paginate}
@@ -89,9 +89,9 @@ export default class QueryBuilder {
    */
   public resolveFields(fields: any): string {
     let resolveFields = '';
-
+    console.log(fields);
     forOwn(fields, (fields, resource) => {
-      resolveFields += `&fields[${resource}]=${fields.toString()}`;
+      resolveFields += `fields[${resource}]=${fields.toString()}`;
     });
 
     if (!isEmpty(resolveFields)) {
@@ -102,21 +102,16 @@ export default class QueryBuilder {
   }
   
   /**
-   * @param  {Array<string>} filters
+   * @param  {Array<Record<string, string>>} filters
    * @returns string
    */
-  public resolveFilters(filters: Array<string>): string {
+  public resolveFilters(filters: Array<Record<string, string>>): string {
     let resolveFilters = '';
 
-    forOwn(filters, (value, filter) => {
-        if (isObject(value)) {
-            forOwn(value, (innerValue: Array<string>, innerFilter) => {
-                resolveFilters += `filter[${filter}][${innerFilter}]=${innerValue.toString()}`;
-            });
-        } else {
-            resolveFilters += (isNull(value)) ? `filter[${filter}]` : `filter[${filter}]=${value.toString()}`;
-        }
-    });
+    filters.map((filter: Record<string, string>, index: number) => {
+      const property = Object.getOwnPropertyNames(filter)[0];
+      resolveFilters += `${(index >= 1 ? '&' : '')}filter[${property}]=${filter[property].toString()}`;
+    })
 
     if (!isEmpty(resolveFilters)) {
       return `${this.setAmpersand(this.query)}${resolveFilters}`;
