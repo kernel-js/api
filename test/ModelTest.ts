@@ -81,7 +81,7 @@ describe('Handling', () => {
     let entity = new Entity();
 
     let result = JSON.stringify(handling.respond(_.clone(entity), requestOne, true));
-    const expect = '{"attributes":{"id":"1","type":"posts","title":"Suscipit ad voluptatum est aliquam omnis."},"relationships":{},"queryBuilder":{"query":""},"queryModifier":{"resourceName":"posts"},"handling":{},"id":"1"}';
+    const expect = '{"attributes":{"id":"1","type":"posts","title":"Suscipit ad voluptatum est aliquam omnis."},"relationships":{},"queryBuilder":{"query":"","includes":[],"filters":[],"fields":[]},"queryModifier":{"resourceName":"posts"},"handling":{},"id":"1"}';
 
     chai.expect(result).to.deep.equal(expect);
   });
@@ -129,7 +129,10 @@ describe('Handling', () => {
           title: 'Suscipit ad voluptatum est aliquam omnis.',
         },
         queryBuilder: {
-          'query': ''
+          query: '',
+          includes: [],
+          filters: [],
+          fields: []
         }
       },
       '1': {
@@ -145,7 +148,10 @@ describe('Handling', () => {
           title: 'Suscipit ad voluptatum est aliquam omnis.',
         },
         queryBuilder: {
-          'query': ''
+          query: '',
+          includes: [],
+          filters: [],
+          fields: []
         }
       },
       '2':{
@@ -161,7 +167,10 @@ describe('Handling', () => {
           title: 'Suscipit ad voluptatum est aliquam omnis.',
         },
         queryBuilder: {
-          'query': ''
+          query: '',
+          includes: [],
+          filters: [],
+          fields: []
         }
       }
     });
@@ -198,13 +207,13 @@ describe('QueryModifiers', () => {
     chai.expect(result.queryBuilder.fields).to.deep.equal({ posts: 'title,subtitle' });
   });
 
-  it('where with group', () => {
+  it('where without group', () => {
     let entity = new Entity();
     let result = entity.where('name', 'Jose');
-    chai.expect(result.queryBuilder.filters).to.deep.equal({ name: 'Jose' });
+    chai.expect(result.queryBuilder.filters).to.deep.equal([{ name: 'Jose' }]);
   });
 
-  // it('where without group', () => {
+  // it('where with group', () => {
   //   let entity = new Entity();
   //   let result = entity.where('permission', 'Admin', 'user');
   //   chai.expect(result.queryBuilder.filters).to.deep.equal({ user: { permission: 'Admin' } });
