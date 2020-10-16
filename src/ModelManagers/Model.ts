@@ -195,7 +195,7 @@ export abstract class Model implements ModelSignature {
   public attach(...entities: Array<Model>): Promise<any> {
     this._mountRelationships(entities);
 
-    this.config.method = 'PUT';
+    this.config.method = 'PATCH';
 
     return this.request(this.config);
   }
@@ -211,8 +211,8 @@ export abstract class Model implements ModelSignature {
   public detach(...entities: Array<Model>): Promise<any> {
     this._mountRelationships(entities);
 
-    this.config.method = 'PUT';
-    this.config.data = [];
+    this.config.method = 'PATCH';
+    this.config.data = {data: []};
 
     return this.request(this.config);
   }
