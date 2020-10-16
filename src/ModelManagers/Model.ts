@@ -1,10 +1,10 @@
 import Handling from './Handling';
+import { get, isEmpty } from 'lodash';
 import { ResolveArray } from '../helpers/index';
 import { TypeError } from '@kernel-js/exceptions';
 import QueryBuilder from '../QueryManagers/QueryBuilder';
 import QueryModifier from '../QueryManagers/QueryModifier';
 import { Config, ModelSignature } from '../Interfaces/index';
-import { get } from 'lodash';
 
 /**
  * Model Abstract class
@@ -185,87 +185,98 @@ export abstract class Model implements ModelSignature {
   }
 
   /**
-   * @param  {Model} entity
-   * @returns Model
+   *
+   *
+   * @param {...Array<Model>} entities
+   * @return {*}  {Promise<any>}
+   * @memberof Model
    */
-  public attach(entity: Model) {
-    this.relationships = {
-      type: entity.constructor.name,
-      id: entity.id,
-    };
+  @ResolveArray()
+  public attach(...entities: Array<Model>): Promise<any> {
+    this._mountRelationships(entities);
+
+    this.config.method = 'PUT';
+
+    return this.request(this.config);
+  }
+
+  /**
+   *
+   *
+   * @param {...Array<Model>} entities
+   * @return {*}  {Promise<any>}
+   * @memberof Model
+   */
+  @ResolveArray()
+  public detach(...entities: Array<Model>): Promise<any> {
+    this._mountRelationships(entities);
+
+    this.config.method = 'PUT';
+    this.config.data = [];
+
+    return this.request(this.config);
+  }
+
+  /**
+   *
+   *
+   * @param {...Array<Model>} entities
+   * @return {*}  {Promise<any>}
+   * @memberof Model
+   */
+  @ResolveArray()
+  public createPivot(...entities: Array<Model>): Promise<any> {
+    this._mountRelationships(entities);
+
+    this.config.method = 'POST';
+
+    return this.request(this.config);
+  }
+
+  /**
+   *
+   *
+   * @param {...Array<Model>} entities
+   * @return {*}  {Promise<any>}
+   * @memberof Model
+   */
+  @ResolveArray()
+  public deletePivot(...entities: Array<Model>): Promise<any> {
+    this._mountRelationships(entities);
+
+    this.config.method = 'DELETE';
+
+    return this.request(this.config);
+  }
+
+  /**
+   *
+   *
+   * @private
+   * @param {...Array<Model>} entities
+   * @memberof Model
+   */
+  private _mountRelationships(entities: Array<Model>): void {
+    const type = get(entities[0], 'resourceName');
+    console.log(type);
+    if (isEmpty(type) || entities.some((entity) => entity.resourceName !== type)) {
+      throw new TypeError(`The entities must be of the same type `, 422);
+    }
+
+    this.relationships['data'] = entities.map((entity) => {
+      return {
+        type: entity.resourceName.toLowerCase(),
+        id: entity.id,
+      };
+    });
 
     this.config = {
-      method: 'PATCH',
-      url: `${this.resourceUrl()}/${this.id}/relationships/${this.relationships.type.toLowerCase()}`,
+      method: '',
+      url: `${this.resourceUrl()}/${this.id}/relationships/${type.toLowerCase()}`,
       data: this.handling.serialize(this)
     };
 
     this.queryBuilder.resetQuery(this);
-
-    return this.request(this.config);
-  }
-
-  /**
-   * @param  {Model} entity
-   * @returns Model
-   */
-  public detach(entity: Model) {
-    this.relationships = {
-      type: entity.constructor.name,
-      id: entity.id,
-    };
-
-    this.config = {
-      method: 'PATCH',
-      url: `${this.resourceUrl()}/${this.id}/relationships/${this.relationships.type.toLowerCase()}`,
-      data: []
-    };
-
-    this.queryBuilder.resetQuery(this);
-
-    return this.request(this.config);
-  }
-
-  /**
-   * @param  {Model} entity
-   * @returns Model
-   */
-  public createPivot(entity: Model) {
-    this.relationships = {
-      type: entity.constructor.name,
-      id: entity.id,
-    };
-
-    this.config = {
-      method: 'POST',
-      url: `${this.resourceUrl()}/${this.id}/relationships/${this.relationships.type.toLowerCase()}`,
-      data: this.handling.serialize(this)
-    };
-
-    this.queryBuilder.resetQuery(this);
-
-    return this.request(this.config);
-  }
-
-  /**
-   * @param  {Model} entity
-   * @returns Model
-   */
-  public deletePivot(entity: Model) {
-    this.relationships = {
-      type: entity.constructor.name,
-      id: entity.id,
-    };
-
-    this.config = {
-      method: 'DELETE',
-      url: `${this.resourceUrl()}/${this.id}/relationships/${this.relationships.type.toLowerCase()}`,
-      data: []
-    };
-
-    this.queryBuilder.resetQuery(this);
-
-    return this.request(this.config);
   }
 
   /**

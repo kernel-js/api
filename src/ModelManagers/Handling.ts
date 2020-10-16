@@ -64,7 +64,6 @@ export default class Handling {
     let serializer = new Serializer(new JsonEncoder());
 
     if (!isEmpty(response.relationships)) {
-      response.relationships.type = response.relationships.type.toLowerCase();
       return serializer.serialize(response.relationships);
     }
 
