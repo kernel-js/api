@@ -1,5 +1,6 @@
 import Handling from './Handling';
 import { get, isEmpty } from 'lodash';
+import Pagination from './Pagination';
 import { ResolveArray } from '../helpers/index';
 import { TypeError } from '@kernel-js/exceptions';
 import QueryBuilder from '../QueryManagers/QueryBuilder';
@@ -258,7 +259,7 @@ export abstract class Model implements ModelSignature {
    */
   private _mountRelationships(entities: Array<Model>): void {
     const type = get(entities[0], 'resourceName');
-    console.log(type);
+
     if (isEmpty(type) || entities.some((entity) => entity.resourceName !== type)) {
       throw new TypeError(`The entities must be of the same type `, 422);
     }
@@ -317,7 +318,7 @@ export abstract class Model implements ModelSignature {
    * @param  {number} page
    * @returns Model
    */
-  public paginate(perPage: number, page: number): Model {
+  public paginate(perPage: number, page: number): Promise<any> {
     if (typeof perPage !== 'number') {
       throw new TypeError(`Argument 1 passed must be of the type number, ${typeof this.id} given`, 500);
     }
@@ -338,7 +339,18 @@ export abstract class Model implements ModelSignature {
 
     this.queryBuilder.resetQuery(this);
 
-    return this;
+    return new Promise((resolve, reject) => {
+      this.request(this.config)
+      .then( response => {
+        const pagination = response.data.meta.pagination;
+        const res = (response.data) ? this.handling.respond(this, response.data, false) : response;
+
+        resolve(new Pagination(pagination, res));
+      })
+      .catch( response => {
+        reject(response)
+      });
+    })
   }
 
   /**

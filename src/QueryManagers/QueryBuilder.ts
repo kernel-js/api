@@ -82,7 +82,7 @@ export default class QueryBuilder {
     self.queryBuilder.fields = [];
     self.queryBuilder.pagination = {number: NaN, size: NaN};
   }
-  
+
   /**
    * @param  {any} fields
    * @returns string
@@ -100,7 +100,7 @@ export default class QueryBuilder {
 
     return ''
   }
-  
+
   /**
    * @param  {Array<Record<string, string>>} filters
    * @returns string
@@ -119,7 +119,7 @@ export default class QueryBuilder {
 
     return ''
   }
-  
+
   /**
    * @param  {Array<string>} includes
    * @returns string
@@ -131,7 +131,7 @@ export default class QueryBuilder {
 
     return ''
   }
-  
+
   /**
    * @param  {Paginate} pagination
    * @returns string

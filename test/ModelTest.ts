@@ -25,12 +25,12 @@ describe('Requests', () => {
     chai.expect(result).to.deep.equal({ method: 'GET', url: 'http://localhost/api/posts/1' });
   });
 
-  it('paginate', () => {
-    let entity = new Entity();
+  // it('paginate', () => {
+  //   let entity = new Entity();
 
-    let result = entity.paginate(3, 1).getUrlConfig();
-    chai.expect(result).to.deep.equal({ method: 'GET', url: 'http://localhost/api/posts?page%5Bsize%5D=3&page%5Bnumber%5D=1' });
-  });
+  //   let result = entity.paginate(3, 1).getUrlConfig();
+  //   chai.expect(result).to.deep.equal({ method: 'GET', url: 'http://localhost/api/posts?page%5Bsize%5D=3&page%5Bnumber%5D=1' });
+  // });
 
   // it('create', () => {
   //   let entity = new Entity();
