@@ -188,12 +188,11 @@ export abstract class Model implements ModelSignature {
   /**
    *
    *
-   * @param {...Array<Model>} entities
+   * @param {Array<Model>} entities
    * @return {*}  {Promise<any>}
    * @memberof Model
    */
-  @ResolveArray()
-  public attach(...entities: Array<Model>): Promise<any> {
+  public attach(entities: Array<Model>): Promise<any> {
     this._mountRelationships(entities);
 
     this.config.method = 'PATCH';
@@ -204,12 +203,11 @@ export abstract class Model implements ModelSignature {
   /**
    *
    *
-   * @param {...Array<Model>} entities
+   * @param {Array<Model>} entities
    * @return {*}  {Promise<any>}
    * @memberof Model
    */
-  @ResolveArray()
-  public detach(...entities: Array<Model>): Promise<any> {
+  public detach(entities: Array<Model>): Promise<any> {
     this._mountRelationships(entities);
 
     this.config.method = 'PATCH';
@@ -221,12 +219,11 @@ export abstract class Model implements ModelSignature {
   /**
    *
    *
-   * @param {...Array<Model>} entities
+   * @param {Array<Model>} entities
    * @return {*}  {Promise<any>}
    * @memberof Model
    */
-  @ResolveArray()
-  public createPivot(...entities: Array<Model>): Promise<any> {
+  public createPivot(entities: Array<Model>): Promise<any> {
     this._mountRelationships(entities);
 
     this.config.method = 'POST';
@@ -237,12 +234,11 @@ export abstract class Model implements ModelSignature {
   /**
    *
    *
-   * @param {...Array<Model>} entities
+   * @param {Array<Model>} entities
    * @return {*}  {Promise<any>}
    * @memberof Model
    */
-  @ResolveArray()
-  public deletePivot(...entities: Array<Model>): Promise<any> {
+  public deletePivot(entities: Array<Model>): Promise<any> {
     this._mountRelationships(entities);
 
     this.config.method = 'DELETE';
