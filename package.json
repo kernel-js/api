@@ -39,7 +39,7 @@
   "dependencies": {
     "@kernel-js/exceptions": "^1.0.4",
     "@kernel-js/serializer": "^1.0.1",
-    "axios": "^0.18.1",
+    "axios": "^0.21.1",
     "lodash": "^4.17.20"
   },
   "devDependencies": {
