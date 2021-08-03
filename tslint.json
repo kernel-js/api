@@ -19,5 +19,8 @@
       "max-line-length": {
           "options": [120]
       }
+  },
+  "compilerOptions": {
+      "esModuleInterop": true
   }
 }

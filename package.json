@@ -4,9 +4,10 @@
   "description": "Package to easily develop REST API following JSON API specification.",
   "main": "./dist/index.js",
   "module": "./es6/index.js",
+  "type": "module",
   "scripts": {
     "serve": "tsc -w",
-    "test": "mocha -r ts-node/register test/**/*Test.ts",
+    "test": "mocha -r ts-node/register test/**/*",
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch",
     "build": "npm run build:types && npm run build:js",
@@ -39,7 +40,7 @@
   "dependencies": {
     "@kernel-js/exceptions": "^1.0.4",
     "@kernel-js/serializer": "^1.0.1",
-    "axios": "^0.18.1",
+    "axios": "^0.21.1",
     "lodash": "^4.17.20"
   },
   "devDependencies": {
@@ -60,6 +61,6 @@
     "rimraf": "^2.7.1",
     "ts-node": "^8.10.2",
     "tslint": "^5.20.1",
-    "typescript": "^3.9.7"
+    "typescript": "^4.3.5"
   }
 }

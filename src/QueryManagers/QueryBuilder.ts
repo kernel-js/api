@@ -1,111 +1,200 @@
 
-import { isEmpty, forOwn, isObject, isNull, get } from 'lodash';
-import { Paginate } from '../Interfaces/index';
-import { Model } from '../ModelManagers/Model';
+import { isEmpty, get } from 'lodash';
+import { IPaginate, IQueryBuilder } from '../Interfaces/index';
 
 /**
  *
+ *
+ * @export
+ * @class QueryBuilder
+ * @implements {IQueryBuilder}
  */
-export default class QueryBuilder {
+export class QueryBuilder implements IQueryBuilder {
+  //#region variables
   /**
+   *
+   *
    * @type {string}
+   * @memberof QueryBuilder
    */
-  public query: string = '';
-
-  /**
-   * @type {Array<string>}
-   */
-  public includes: Array<string> = [];
-
-  /**
-   * @type {string}
-   */
-  public sort!: string;
-
-  /**
-   * @type {Array<Record<string, string>>}
-   */
-  public filters: Array<Record<string, string>> = [];
-
-  /**
-   * @type {Array<string>}
-   */  
-  public fields: Array<string> = [];
-
-  /**
-   * @type {Paginate}
-   */
-  public pagination!: Paginate;
+  private _query: string = '';
 
   /**
    *
+   *
+   * @type {Array<string>}
+   * @memberof QueryBuilder
    */
-  constructor() {}
+  private _includes: Array<string> = [];
 
   /**
-   * @param  {Model} self
-   * @returns string
+   *
+   *
+   * @private
+   * @type {string[]}
+   * @memberof QueryBuilder
    */
-  public getQuery(self: Model): string {
+  private _sort: string[] = [];
 
-    this.query += this.resolveIncludes(self.queryBuilder.includes);
-    this.query += this.resolveFields(self.queryBuilder.fields);
-    this.query += this.resolveFilters(self.queryBuilder.filters);
-    this.query += this.resolvePagination(self.queryBuilder.pagination);
-    this.query += this.resolveSort(self.queryBuilder.sort);
+  /**
+   *
+   *
+   * @type {Array<Record<string, string>>}
+   * @memberof QueryBuilder
+   */
+  private _filters: Array<Record<string, string>> = [];
 
-    if (this.query.length) {
-      self.queryBuilder.query = `?${encodeURI(this.query)}`;
-    }
-    
-    return self.queryBuilder.query;
+  /**
+   *
+   *
+   * @type {Array<string>}
+   * @memberof QueryBuilder
+   */
+  private _fields: Record<string, string>[] = [];
+
+  /**
+   *
+   *
+   * @type {Paginate}
+   * @memberof QueryBuilder
+   */
+  private _pagination!: IPaginate;
+  //#endregion
+
+  //#region add methods
+  /**
+   *
+   *
+   * @param {string[]} includes
+   * @memberof QueryBuilder
+   */
+  public addIncludes(includes: string[]): void {
+    this._includes = this._includes.concat(includes);
   }
 
   /**
-   * @param  {string} query
+   *
+   *
+   * @param {Record<string, string>} fields
+   * @memberof QueryBuilder
    */
-  public setAmpersand(query: string) {
+  public addFields(fields: Record<string, string>): void {
+    this._fields = this._fields.concat([fields]);
+  }
+
+  /**
+   *
+   *
+   * @param {Record<string, string>} filters
+   * @memberof QueryBuilder
+   */
+  public addFilters(filters: Record<string, string>): void {
+    this._filters = this._filters.concat([filters]);
+  }
+
+  /**
+   *
+   *
+   * @param {string[]} sorts
+   * @memberof QueryBuilder
+   */
+  public addSort(sorts: string[]): void {
+    this._sort = this._sort.concat(sorts);
+  }
+
+  /**
+   *
+   *
+   * @param {IPaginate} pagination
+   * @memberof QueryBuilder
+   */
+  public addPagination(pagination: IPaginate): void {
+    this._pagination = pagination;
+  }
+  //#endregion
+
+  /**
+   *
+   *
+   * @return {*}  {string}
+   * @memberof QueryBuilder
+   */
+  public getQuery(): string {
+    this._query = '';
+
+    this._query += this._resolveIncludes(this._includes);
+    this._query += this._resolveFields(this._fields);
+    this._query += this._resolveFilters(this._filters);
+    this._query += this._resolvePagination(this._pagination);
+    this._query += this._resolveSort(this._sort);
+
+    if (this._query.length) {
+      return `?${encodeURI(this._query)}`;
+    }
+
+    return this._query;
+  }
+
+  /**
+   *
+   *
+   * @memberof QueryBuilder
+   */
+  public resetQuery(): void {
+    this._query = '';
+    this._includes = [];
+    this._sort = [];
+    this._filters = [];
+    this._fields = [];
+    this._pagination = {number: NaN, size: NaN};
+  }
+
+  /**
+   *
+   *
+   * @private
+   * @param {string} query
+   * @return {*}  {string}
+   * @memberof QueryBuilder
+   */
+  private _setAmpersand(query: string): string {
     if (query) {
       return '&'
     }
     return '';
   }
 
+  //#region resolved Methods
   /**
-   * @param  {Model} self
+   *
+   *
+   * @param {*} fields
+   * @return {*}  {string}
+   * @memberof QueryBuilder
    */
-  public resetQuery(self: Model) {
-    self.queryBuilder.query = '';
-    self.queryBuilder.includes = [];
-    self.queryBuilder.sort = '';
-    self.queryBuilder.filters = [];
-    self.queryBuilder.fields = [];
-    self.queryBuilder.pagination = {number: NaN, size: NaN};
-  }
-
-  /**
-   * @param  {any} fields
-   * @returns string
-   */
-  public resolveFields(fields: any): string {
+  private _resolveFields(fields: Record<string, string>[] = []): string {
     let resolveFields = '';
 
-    forOwn(fields, (fields, resource) => {
-      resolveFields += `fields[${resource}]=${fields.toString()}`;
-    });
+    fields.map((field, index) => {
+      const property = Object.getOwnPropertyNames(field)[0];
+      resolveFields += `${(index >= 1 ? '&' : '')}fields[${property}]=${field[property].toString()}`;
+    })
 
     if (!isEmpty(resolveFields)) {
-      return `${this.setAmpersand(this.query)}${resolveFields}`;
+      return `${this._setAmpersand(this._query)}${resolveFields}`;
     }
 
     return ''
   }
 
   /**
-   * @param  {Array<Record<string, string>>} filters
-   * @returns string
+   *
+   *
+   * @param {Array<Record<string, string>>} filters
+   * @return {*}  {string}
+   * @memberof QueryBuilder
    */
-  public resolveFilters(filters: Array<Record<string, string>>): string {
+   private _resolveFilters(filters: Array<Record<string, string>> = []): string {
     let resolveFilters = '';
 
     filters.map((filter: Record<string, string>, index: number) => {
@@ -114,45 +203,55 @@ export default class QueryBuilder {
     })
 
     if (!isEmpty(resolveFilters)) {
-      return `${this.setAmpersand(this.query)}${resolveFilters}`;
+      return `${this._setAmpersand(this._query)}${resolveFilters}`;
     }
 
     return ''
   }
 
   /**
-   * @param  {Array<string>} includes
-   * @returns string
+   *
+   *
+   * @param {Array<string>} includes
+   * @return {*}  {string}
+   * @memberof QueryBuilder
    */
-  public resolveIncludes(includes: Array<string>): string {
+  private _resolveIncludes(includes: Array<string> = []): string {
     if (!isEmpty(includes)) {
-      return `${this.setAmpersand(this.query)}include=${includes.toString()}`;
+      return `${this._setAmpersand(this._query)}include=${includes.toString()}`;
     }
 
     return ''
   }
 
   /**
-   * @param  {Paginate} pagination
-   * @returns string
+   *
+   *
+   * @param {IPaginate} pagination
+   * @return {*}  {string}
+   * @memberof QueryBuilder
    */
-  public resolvePagination(pagination: Paginate): string {
+  private _resolvePagination(pagination: IPaginate): string {
     if (get(pagination, 'number', false) && get(pagination, 'size', false)) {
-      return `${this.setAmpersand(this.query)}page[size]=${pagination.size}&page[number]=${pagination.number}`;
+      return `${this._setAmpersand(this._query)}page[size]=${pagination.size}&page[number]=${pagination.number}`;
     }
     
     return ''
   }
 
   /**
-   * @param  {string} sort
-   * @returns string
+   *
+   *
+   * @param {string} sort
+   * @return {*}  {string}
+   * @memberof QueryBuilder
    */
-  public resolveSort(sort: string): string {
+  private _resolveSort(sort: string[] = []): string {
     if (!isEmpty(sort)) {
-      return `${this.setAmpersand(this.query)}sort=${sort}`;
+      return `${this._setAmpersand(this._query)}sort=${sort.toString()}`;
     }
 
     return ''
   }
+  #end
 }

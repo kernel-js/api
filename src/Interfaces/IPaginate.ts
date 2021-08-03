@@ -1,7 +1,7 @@
 /**
  *
  */
-export interface Paginate {
+export interface IPaginate {
     size: number;
     number: number;
 }

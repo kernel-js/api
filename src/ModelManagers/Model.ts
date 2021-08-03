@@ -1,263 +1,501 @@
-import Handling from './Handling';
-import { get, isEmpty } from 'lodash';
-import Pagination from './Pagination';
-import { ResolveArray } from '../helpers/index';
+import { Pagination } from './Pagination';
 import { TypeError } from '@kernel-js/exceptions';
-import QueryBuilder from '../QueryManagers/QueryBuilder';
-import QueryModifier from '../QueryManagers/QueryModifier';
-import { Config, ModelSignature } from '../Interfaces/index';
+import { IRequestConfig, IHandling, IModel, IQueryModifier, IQueryBuilder, IJsonApiResponse } from '../Interfaces/index';
+
 
 /**
- * Model Abstract class
+ *
+ *
+ * @export
+ * @abstract
+ * @class Model
+ * @implements {IModel}
  */
-export abstract class Model implements ModelSignature {
-    
+export abstract class Model implements IModel {
   /**
+   *
+   *
+   * @type {Config}
+   * @memberof Model
+   */
+  private _config!: IRequestConfig;
+
+  /**
+   *
+   *
+   * @protected
    * @type {Handling}
+   * @memberof Model
    */
-  protected handling: Handling;
+  protected handling: IHandling;
 
   /**
+   *
+   *
+   * @protected
    * @type {QueryModifier}
+   * @memberof Model
    */
-  protected queryModifier: QueryModifier;
+  protected queryModifier: IQueryModifier;
 
   /**
-   * @type {QueryBuilder}
+   *
+   *
+   * @protected
+   * @type {IQueryBuilder}
+   * @memberof Model
    */
-  public queryBuilder: QueryBuilder;
+  protected queryBuilder: IQueryBuilder;
 
   /**
-   * @type {Number|String}
+   *
+   *
+   * @type {(number | string)}
+   * @memberof Model
    */
-  public id!: number | String;
+  public id!: number | string;
 
   /**
-   * @type {String}
+   *
+   *
+   * @type {string}
+   * @memberof Model
    */
   public type!: string;
 
   /**
-   * @type {Config}
-   */
-  public config!: Config;
-
-  /**
-   * @type {Any}
+   *
+   *
+   * @type {*}
+   * @memberof Model
    */
   public attributes: any = {};
 
   /**
-   * @type {Any}
+   *
+   *
+   * @type {*}
+   * @memberof Model
    */
   public relationships: any = {};
 
   /**
-   * @type {String}
+   *
+   *
+   * @readonly
+   * @abstract
+   * @type {string}
+   * @memberof Model
    */
-  get resourceName() {
-    return '';
-  };
-
-  /**
-   * @type {String}
-   */
-  abstract get baseUrl(): string;
-
-  /**
-   * @type {Array<string>}
-   */
-  abstract get fields(): Array<string>;
-
-  /**
-   * @type {Array<string>}
-   */
-  abstract get relationshipNames(): Array<string>;
+  public abstract readonly resourceName: string
 
   /**
    *
+   *
+   * @readonly
+   * @abstract
+   * @type {string}
+   * @memberof Model
    */
-  constructor() {
-    this.queryBuilder = new QueryBuilder();
-    this.queryModifier = new QueryModifier(this.resourceName);
-    this.handling = new Handling();
+  public abstract readonly baseUrl: string;
+
+  /**
+   *
+   *
+   * @readonly
+   * @abstract
+   * @type {Array<string>}
+   * @memberof Model
+   */
+  public abstract readonly fields: Array<string>;
+
+  /**
+   *
+   *
+   * @readonly
+   * @abstract
+   * @type {Array<string>}
+   * @memberof Model
+   */
+  public abstract readonly relationshipNames: Array<string>;
+
+  /**
+   * Creates an instance of Model.
+   * @param {IQueryBuilder} queryBuilder
+   * @param {QueryModifier} queryModifier
+   * @param {Handling} handling
+   * @memberof Model
+   */
+  constructor(queryBuilder: IQueryBuilder, queryModifier: IQueryModifier, handling: IHandling) {
+    this.queryBuilder = queryBuilder;
+    this.queryModifier = queryModifier;
+    this.handling = handling;
   }
 
   /**
-   * @returns string
+   *
+   *
+   * @param {IRequestConfig} config
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public setConfig(config: IRequestConfig): this {
+    this._config = {
+      method: config.method,
+      url: `${config.url}${this.queryBuilder.getQuery()}`,
+      data: config.data,
+      headers: config.headers,
+    }
+
+    this.queryBuilder.resetQuery();
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @protected
+   * @return {*}  {string}
+   * @memberof Model
    */
   protected resourceUrl(): string {
     return `${this.baseUrl}/${this.resourceName}`
   }
 
   /**
-   * @param  {Config} config
-   * @returns Promise
+   *
+   *
+   * @protected
+   * @abstract
+   * @param {Config} config
+   * @return {*}  {Promise<any>}
+   * @memberof Model
    */
-  protected abstract request(config: Config): Promise<any>;
+  protected abstract request<T = any>(config: IRequestConfig): Promise<T>;
 
+  //#region Get Response
   /**
-   * @param  {boolean=true} hydrate
-   * @returns Promise
+   *
+   *
+   * @param {boolean} [hydrate=true]
+   * @return {*}  {Promise<any>}
+   * @memberof Model
    */
-  public async getEntity(hydrate:boolean = true): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.request(this.config)
-      .then( response => {
-        const res = (response.data) ? this.handling.respond(this, response.data, hydrate) : response;
-        resolve(res);
-      })
-      .catch( response => {
-        reject(response)
-      });
-    })
+  public async getEntity(): Promise<this | this[]> {
+    const response = await this._getResponse();
+
+    return this.handling.hydrate(this, response);
   }
 
   /**
-   * @returns Promise
+   *
+   *
+   * @return {*}  {Promise<Record<string, any>>}
+   * @memberof Model
    */
-  public getContent(): Promise<any> {
-    return this.getEntity(false);
+  public async getContent(): Promise<Record<string, any>> {
+    const response = await this._getResponse();
+
+    return this.handling.unserialize(response);
   }
 
   /**
-   * @returns string
+   *
+   *
+   * @return {*}  {string}
+   * @memberof Model
    */
   public getUrl(): string {
-    return this.config.url;
-  }
-
-  /**
-   * @returns string
-   */
-  public getUrlConfig(): Config {
-    return this.config;
-  }
-
-  /**
-   * @returns Model
-   */
-  public all(): Model {
-    this.config = {
-      method: 'GET',
-      url: `${this.resourceUrl()}${this.queryBuilder.getQuery(this)}`,
-    };
-
-    this.queryBuilder.resetQuery(this);
-
-    return this;
-  }
-
-  /**
-   * @returns Model
-   */
-  public search(): Model {
-    this.config = {
-      method: 'GET',
-      url: `${this.resourceUrl()}/search${this.queryBuilder.getQuery(this)}`,
-    };
-
-    this.queryBuilder.resetQuery(this);
-
-    return this;
-  }
-
-  /**
-   * @returns Model
-   */
-  public async save() {
-    if (get(this, 'id')) {
-      this.config = {
-        method: 'PUT',
-        url: `${this.resourceUrl()}/${this.id}`,
-        data: this.handling.serialize(this)
-      };
-    } else {
-      this.config = {
-        method: 'POST',
-        url: `${this.resourceUrl()}`,
-        data: this.handling.serialize(this)
-      };
-    }
-
-    this.queryBuilder.resetQuery(this);
-
-    return this.request(this.config);
+    return this._config.url;
   }
 
   /**
    *
    *
-   * @param {Array<Model>} entities
-   * @return {*}  {Promise<any>}
+   * @return {*}  {IRequestConfig}
    * @memberof Model
    */
-  public attach(entities: Array<Model>): Promise<any> {
-    this._mountRelationships(entities);
-
-    this.config.method = 'PATCH';
-
-    return this.request(this.config);
-  }
-
-  /**
-   *
-   *
-   * @param {Array<Model>} entities
-   * @return {*}  {Promise<any>}
-   * @memberof Model
-   */
-  public detach(entities: Array<Model>): Promise<any> {
-    this._mountRelationships(entities);
-
-    this.config.method = 'PATCH';
-    this.config.data = {data: []};
-
-    return this.request(this.config);
-  }
-
-  /**
-   *
-   *
-   * @param {Array<Model>} entities
-   * @return {*}  {Promise<any>}
-   * @memberof Model
-   */
-  public createPivot(entities: Array<Model>): Promise<any> {
-    this._mountRelationships(entities);
-
-    this.config.method = 'POST';
-
-    return this.request(this.config);
-  }
-
-  /**
-   *
-   *
-   * @param {Array<Model>} entities
-   * @return {*}  {Promise<any>}
-   * @memberof Model
-   */
-  public deletePivot(entities: Array<Model>): Promise<any> {
-    this._mountRelationships(entities);
-
-    this.config.method = 'DELETE';
-
-    return this.request(this.config);
+  public getUrlConfig(): IRequestConfig {
+    return this._config;
   }
 
   /**
    *
    *
    * @private
-   * @param {...Array<Model>} entities
+   * @return {*}  {Promise<IJsonApiResponse>}
    * @memberof Model
    */
-  private _mountRelationships(entities: Array<Model>): void {
-    const type = get(entities[0], 'resourceName');
+  private async _getResponse(): Promise<IJsonApiResponse> {
+    return this.request(this._config)
+      .then( response => Promise.resolve(response.data))
+      .catch( error => Promise.reject(error));
+  }
+  //#endregion
 
-    if (isEmpty(type) || entities.some((entity) => entity.resourceName !== type)) {
-      throw new TypeError(`The entities must be of the same type `, 422);
+  //#region URL Modifiers
+  /**
+   *
+   *
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public all(): this {
+    this.setConfig({ method: 'GET', url: `${this.resourceUrl()}`})
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public search(): this {
+    this.setConfig({ method: 'GET', url: `${this.resourceUrl()}/search`})
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @param {(number | string)} id
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public find(id: number | string): this {
+    if (!id) {
+      throw new TypeError(`Id argument is required.`, 500)
+    }
+
+    if (typeof id !== 'number' && typeof id !== 'string') {
+      throw new TypeError(`Argument 1 passed must be of the type number or string, ${typeof id} given`, 422);
+    }
+
+    this.setConfig({ method: 'GET', url: `${this.resourceUrl()}/${id}`})
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @param {Array<IModel>} entities
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public attach(entities: Array<IModel>): this {
+    const config = this._mountRelationships(entities);
+
+    config.method = 'PATCH';
+
+    this.setConfig(config);
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @param {Array<IModel>} entities
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public detach(entities: Array<IModel>): this {
+    const config = this._mountRelationships(entities);
+
+    config.method = 'PATCH';
+    config.data = JSON.stringify({data: []});
+
+    this.setConfig(config);
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @param {Array<IModel>} entities
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public createPivot(entities: Array<IModel>): this {
+    const config = this._mountRelationships(entities);
+
+    config.method = 'POST';
+
+    this.setConfig(config);
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @param {Array<IModel>} entities
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public deletePivot(entities: Array<IModel>): this {
+    const config = this._mountRelationships(entities);
+
+    config.method = 'DELETE';
+
+    this.setConfig(config);
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @param {(number | string)} [id]
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public save(id?: number | string): this {
+
+    this.id = id || this.id; // Preference parameter
+
+    if (typeof this.id !== 'string' && typeof this.id !== 'number' && typeof this.id !== 'undefined') {
+      throw new TypeError(`Argument 1 passed must be of the type number or string, ${typeof this.id} given.`, 422)
+    }
+
+    if (this.id) {
+      this.setConfig({
+        method: 'PUT',
+        url: `${this.resourceUrl()}/${this.id}`,
+        data: this.handling.serialize(this)
+      });
+    } else {
+      this.setConfig({
+        method: 'POST',
+        url: `${this.resourceUrl()}`,
+        data: this.handling.serialize(this)
+      });
+    }
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public create(): this {
+    return this.save();
+  }
+
+  /**
+   *
+   *
+   * @param {(number | string)} id
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public update(id: number | string): this {
+    if (!id) {
+      throw new TypeError(`Id argument is required.`, 500)
+    }
+
+    if (typeof id !== 'number' && typeof id !== 'string') {
+      throw new TypeError(`Argument 1 passed must be of the type number or string, ${typeof id} given.`, 422);
+    }
+
+    return this.save(id);
+  }
+
+  /**
+   *
+   *
+   * @param {(number | string)} [id]
+   * @return {*}  {this}
+   * @memberof Model
+   */
+  public delete(id?: number | string): this {
+
+    this.id = id || this.id; // Preference parameter
+
+    if (!this.id) {
+      throw new TypeError(`Id argument is required in model or passed as parameter.`, 500)
+    }
+
+    if (typeof this.id !== 'number' && typeof this.id !== 'string') {
+      throw new TypeError(`Argument 1 passed must be of the type number or string, ${typeof this.id} given.`, 422);
+    }
+
+    this.setConfig({
+      method: 'DELETE',
+      url: `${this.resourceUrl()}/${this.id}`
+    });
+
+    return this;
+  }
+
+  /**
+   *
+   *
+   * @param {number} perPage
+   * @param {number} page
+   * @return {*}  {Promise<any>}
+   * @memberof Model
+   */
+  public paginate(perPage: number, page: number): Promise<any> {
+    if (!perPage || !page) {
+      throw new TypeError(`Arguments PerPage and Page is required.`, 500)
+    }
+
+    if (typeof perPage !== 'number') {
+      throw new TypeError(`Argument 1 passed must be of the type number, ${typeof this.id} given.`, 422);
+    }
+
+    if (typeof page !== 'number') {
+      throw new TypeError(`Argument 2 passed must be of the type number, ${typeof this.id} given.`, 422);
+    }
+
+    this.queryBuilder.addPagination({
+      size: perPage,
+      number: page
+    })
+
+    this.setConfig({
+      method: 'GET',
+      url: `${this.resourceUrl()}${this.queryBuilder.getQuery()}`
+    });
+
+    return new Promise((resolve, reject) => {
+      this.request(this._config)
+        .then( response => {
+          const pagination = response.data.meta?.pagination;
+          const attributes = (response.data) ? this.handling.unserialize(response.data) : response;
+
+          resolve(new Pagination(pagination, attributes));
+        })
+        .catch( response => reject(response));
+    })
+  }
+
+  /**
+   *
+   *
+   * @private
+   * @param {...Array<IModel>} entities
+   * @memberof Model
+   */
+  private _mountRelationships<T extends IModel>(entities: Array<T>): IRequestConfig {
+    const type = entities[0]?.resourceName;
+
+    if (!type || type.length < 1) {
+      throw new TypeError(`The 1 argument passed must not be Empty and must be of type Array, ${typeof type} given.`, 422);
+    }
+
+    if (entities.some((entity) => entity.resourceName !== type)) {
+      throw new TypeError(`The entities must be of the same type.`, 422);
     }
 
     this.relationships['data'] = entities.map((entity) => {
@@ -267,155 +505,113 @@ export abstract class Model implements ModelSignature {
       };
     });
 
-    this.config = {
-      method: '',
+    return {
       url: `${this.resourceUrl()}/${this.id}/relationships/${type.toLowerCase()}`,
       data: this.handling.serialize(this)
     };
-
-    this.queryBuilder.resetQuery(this);
   }
+  //#endregion
 
+  //#region Query Modifiers
   /**
-   * @param  {number|string} id
-   * @returns Model
+   *
+   *
+   * @param {...Array<string>} includes
+   * @return {*}  {this}
+   * @memberof Model
    */
-  public find(id: number | string): Model {
-    if (typeof id !== 'number' && typeof id !== 'string') {
-      throw new TypeError(`Argument 1 passed must be of the type number or string, ${typeof id} given`, 500);
-    }
-
-    this.config = {
-      method: 'GET',
-      url: `${this.resourceUrl()}/${id}${this.queryBuilder.getQuery(this)}`
-    };
-
-    this.queryBuilder.resetQuery(this);
-
+  public with(...includes: Array<string>): this {
+    this.queryBuilder.addIncludes(this.queryModifier.include(includes))
     return this;
   }
 
   /**
-   * @returns Model
+   *
+   *
+   * @param {string} resource
+   * @param {...Array<string>} fields
+   * @return {*}  {this}
+   * @memberof Model
    */
-  public delete(): Model {
-    this.config = {
-      method: 'DELETE',
-      url: `${this.resourceUrl()}/${this.id}`
-    };
-
-    this.queryBuilder.resetQuery(this);
-
+  public selectResource(resource: string, ...fields: Array<string>): this {
+    this.queryBuilder.addFields(this.queryModifier.select(resource, fields));
     return this;
   }
 
   /**
-   * @param  {number} perPage
-   * @param  {number} page
-   * @returns Model
+   *
+   *
+   * @param {...Array<string>} fields
+   * @return {*}  {this}
+   * @memberof Model
    */
-  public paginate(perPage: number, page: number): Promise<any> {
-    if (typeof perPage !== 'number') {
-      throw new TypeError(`Argument 1 passed must be of the type number, ${typeof this.id} given`, 500);
-    }
-
-    if (typeof page !== 'number') {
-      throw new TypeError(`Argument 2 passed must be of the type number, ${typeof this.id} given`, 500);
-    }
-
-    this.queryBuilder.pagination = {
-      size: perPage,
-      number: page
-    }
-
-    this.config = {
-      method: 'GET',
-      url: `${this.resourceUrl()}${this.queryBuilder.getQuery(this)}`
-    };
-
-    this.queryBuilder.resetQuery(this);
-
-    return new Promise((resolve, reject) => {
-      this.request(this.config)
-      .then( response => {
-        const pagination = response.data.meta.pagination;
-        const res = (response.data) ? this.handling.respond(this, response.data, false) : response;
-
-        resolve(new Pagination(pagination, res));
-      })
-      .catch( response => {
-        reject(response)
-      });
-    })
-  }
-
-  /**
-   * @param  {Array<string>} ...includes
-   * @returns Model
-   */
-  @ResolveArray()
-  public with(...includes: Array<string>): Model {
-    this.queryBuilder.includes = this.queryModifier.include(includes)
+  public select(...fields: Array<string>): this {
+    this.queryBuilder.addFields(this.queryModifier.select(this.resourceName, fields));
     return this;
   }
 
   /**
-   * @param  {Array<string>} ...fields
-   * @returns Model
+   *
+   *
+   * @param {...Array<string>} column
+   * @return {*}  {this}
+   * @memberof Model
    */
-  @ResolveArray()
-  public select(...fields: Array<string>): Model {
-    this.queryBuilder.fields = this.queryModifier.select(fields);
+  public orderByAsc(...column: Array<string>): this {
+    this._orderBy(column, 'asc');
     return this;
   }
 
   /**
-   * @param  {Array<string>} ...column
-   * @returns Model
+   *
+   *
+   * @param {...Array<string>} column
+   * @return {*}  {this}
+   * @memberof Model
    */
-  @ResolveArray()
-  public orderByAsc(...column: Array<string>): Model {
-    this._orderBy('asc', ...column);
+  public orderByDesc(...column: Array<string>): this {
+    this._orderBy(column, 'desc');
     return this;
   }
 
   /**
-   * @param  {Array<string>} ...column
-   * @returns Model
+   *
+   *
+   * @param {string} key
+   * @param {string} value
+   * @param {string} [group]
+   * @return {*}  {this}
+   * @memberof Model
    */
-  @ResolveArray()
-  public orderByDesc(...column: Array<string>): Model {
-    this._orderBy('desc', ...column);
-    return this;
-  }
-
-  /**w
-   * @param  {string} key
-   * @param  {string} value
-   * @returns Model
-   */
-  public where(key: string, value: string): Model {
-    this.queryBuilder.filters = this.queryBuilder.filters.concat([this.queryModifier.filter(key, value)]);
+  public where(key: string, value: string, group?: string): this {
+    this.queryBuilder.addFilters(this.queryModifier.filter(key, value, group));
     return this;
   }
 
   /**
-   * @param  {string} value
-   * @returns Model
+   *
+   *
+   * @param {string} value
+   * @return {*}  {this}
+   * @memberof Model
    */
-  public limit(value: string): Model {
+  public limit(value: string): this {
     this.where('limit', value);
     return this;
   }
 
   /**
-   * @param  {string} direction
-   * @param  {Array<string>} ...column
-   * @returns Model
+   *
+   *
+   * @private
+   * @param {Array<string>} column
+   * @param {('asc' | 'desc')} direction
+   * @return {*}  {this}
+   * @memberof Model
    */
-  private _orderBy(direction: string, ...column: Array<string>): Model {
-    this.queryBuilder.sort = this.queryModifier.orderBy(column, direction);
+  private _orderBy(column: Array<string>, direction: 'asc' | 'desc'): this {
+    this.queryBuilder.addSort(this.queryModifier.orderBy(column, direction));
     return this;
   }
-
+  //#endregion
 }

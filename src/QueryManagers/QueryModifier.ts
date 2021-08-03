@@ -1,74 +1,75 @@
-import { isArray, indexOf, uniq, forOwn } from 'lodash';
 import { TypeError } from '@kernel-js/exceptions';
+import { IQueryModifier } from '../Interfaces/IQueryModifier';
 
 /**
- * 
+ *
+ *
+ * @export
+ * @class QueryModifier
  */
-export default class QueryModifier {
+export class QueryModifier implements IQueryModifier {
   /**
-   * @type String
-   */
-  private resourceName: string;
-
-  constructor (resourceName: string) {
-    this.resourceName = resourceName;
-  }
-
-  /**
-   * @param  {Array<string>} includes
-   * @returns Array
+   *
+   *
+   * @param {Array<string>} includes
+   * @return {*}  {Array<string>}
+   * @memberof QueryModifier
    */
   public include(includes: Array<string>): Array<string>
   {
-    includes = uniq(includes);
-    return includes;
+    return [...new Set(includes)];
   }
   
   /**
-   * @param  {Array<string>} fields
-   * @returns Array
+   *
+   *
+   * @param {string} group
+   * @param {Array<string>} fields
+   * @return {*}  {Array<string>}
+   * @memberof QueryModifier
    */
-  public select(fields: Array<string>): Array<string>
+  public select(resource: string, fields: Array<string>): Record<string, string>
   {
-    let selectFields: any = {};
+    let selectFields: Record<string, string> = {};
 
-    if (isArray(fields)) {
-      selectFields[this.resourceName] = fields.toString()
-      return selectFields;
-    }
-
+    selectFields[resource] = fields.toString()
     return selectFields;
   }
 
   /**
-   * @param  {Array<string>} column
-   * @param  {string='asc'} direction
-   * @returns string
+   *
+   *
+   * @param {Array<string>} columns
+   * @param {('asc' | 'desc')} direction
+   * @return {*}  {string[]}
+   * @memberof QueryModifier
    */
-  public orderBy(column: Array<string>, direction: string): string
+  public orderBy(columns: Array<string>, direction: 'asc' | 'desc'): string[]
   {
-    if (indexOf(['asc', 'desc'], direction) === -1) {
+    if (!direction.includes('asc') && !direction.includes('desc')) {
       throw new TypeError(`Argument 2 invalid`, 500);
     }
 
     if (direction === 'desc') {
-      return `-${column}`;
+      return columns.map((column) => `-${column}`);
     }
     
-    return column.toString();
+    return columns;
   }
 
   /**
-   * @param  {string} key
-   * @param  {string} value
-   * @returns Array
+   *
+   *
+   * @param {string} key
+   * @param {string} value
+   * @param {string} [group]
+   * @return {*}  {*}
+   * @memberof QueryModifier
    */
-  public filter(key: string, value: string): any
+  public filter(key: string, value: string, group?: string): Record<string, string>
   {
-    let newFilter: any = {};
+    const groupWithDot = group ? `${group}.` : ''; 
 
-    newFilter[key] = value
-    return newFilter
+    return { [groupWithDot + key]: value }
   }
-
 }

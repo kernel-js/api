@@ -4,7 +4,7 @@
  * @export
  * @class Pagination
  */
-export default class Pagination {
+export class Pagination {
   /**
    * Creates an instance of Pagination.
    * @param {*} meta
@@ -19,18 +19,18 @@ export default class Pagination {
   /**
    *
    *
-   * @private
+   * @public
    * @type {Record<string, any>}
    * @memberof Pagination
    */
-  private meta!: Record<string, any>;
+  public meta!: Record<string, any>;
 
   /**
    *
    *
-   * @private
+   * @public
    * @type {Array<any>}
    * @memberof Pagination
    */
-  private attributes!: Array<any>;
+  public attributes!: Array<any>;
 }

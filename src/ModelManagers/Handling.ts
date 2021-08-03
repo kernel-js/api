@@ -1,96 +1,122 @@
+import { IModel, IHandling, IJsonApiResponse } from '../Interfaces/index';
+import { clone, isUndefined, forEach, isEmpty, indexOf, keys } from 'lodash';
 import { Serializer, JsonEncoder, JsonApiNormalizer, DateNormalizer } from '@kernel-js/serializer';
-import { clone, mapValues, isUndefined, forEach, isEmpty, indexOf, keys } from 'lodash';
-import { Model } from './Model';
-import { ModelSignature } from '../Interfaces/index';
-import { AxiosResponse } from 'axios';
 
 /**
  *
+ *
+ * @export
+ * @class Handling
+ * @implements {IHandling}
  */
-export default class Handling {
+export class Handling implements IHandling {
   
   /**
-   * @param  {Model} that
-   * @param  {any} respond
-   * @returns Model
+   *
+   *
+   * @private
+   * @template T
+   * @param {T} model
+   * @param {*} respond
+   * @return {*}  {T}
+   * @memberof Handling
    */
-  private _hydrate(that: Model, respond: any): Model
+  private _hydrate<T extends IModel>(model: T, respond: any): T
   {
-    that.id = respond.id;
-    that.attributes = Object.assign(clone(that.attributes), respond)
-    return that
+    model.id = respond.id;
+    model.attributes = Object.assign(clone(model.attributes), respond)
+
+    return model
   }
 
   /**
-   * @param  {Model} that
-   * @param  {any} respond
-   * @returns any
+   *
+   *
+   * @private
+   * @template T
+   * @param {T} model
+   * @param {*} respond
+   * @return {*}  {T[]}
+   * @memberof Handling
    */
-  private _hydrateCollection(that: Model, respond: any): any
+  private _hydrateCollection<T extends IModel>(model: T, respond: any): T[]
   {
-    let self = this;
-    return mapValues(respond, (value: any) => {
-      return self._hydrate(clone(that), value);
+    return Object.values(respond).map((value: any) => {
+      return this._hydrate(clone(model), value);
     });
   }
 
   /**
-   * @param  {Model} that
-   * @param  {AxiosResponse} response
-   * @param  {boolean=true} hydrate
-   * @returns any
+   *
+   *
+   * @template T
+   * @param {T} model
+   * @param {IJsonApiResponse} response
+   * @return {*}  {(T | T[])}
+   * @memberof Handling
    */
-  public respond(that: Model, response: AxiosResponse, hydrate:boolean = true): any
+  public hydrate<T extends IModel>(model: T, response: IJsonApiResponse): T | T[]
   {
-    let serializer = new Serializer(new JsonEncoder(), [new JsonApiNormalizer(), new DateNormalizer()]);
-    let respond = serializer.unserialize((typeof response === 'string') ? response : JSON.stringify(response));
-    let hydrated: any;
+    const respond = this.unserialize(response);
 
-    if(indexOf(keys(respond), '0') !== -1) {
-      hydrated = this._hydrateCollection(that, respond);
-    }else {
-      hydrated = this._hydrate(that, respond);
-    }
-
-    return hydrate ? hydrated : respond;
+    return (indexOf(keys(respond), '0') !== -1)
+      ? this._hydrateCollection(model, respond)
+      : this._hydrate(model, respond);
   }
-  
-  /**
-   * @param  {Model} response
-   * @returns any
-   */
-  public serialize(response: ModelSignature): any
-  {
-    let serializer = new Serializer(new JsonEncoder());
 
-    if (!isEmpty(response.relationships)) {
-      return serializer.serialize(response.relationships);
+  /**
+   *
+   *
+   * @param {IJsonApiResponse} response
+   * @return {*}  {Record<string, any>}
+   * @memberof Handling
+   */
+  public unserialize(response: IJsonApiResponse): Record<string, any> {
+    const serializer = new Serializer(new JsonEncoder(), [new JsonApiNormalizer(), new DateNormalizer()]);
+    const respond = serializer.unserialize(JSON.stringify(response)) as Record<string, any>;
+
+    return respond;
+  }
+
+  /**
+   *
+   *
+   * @param {IModel} model
+   * @return {*}  {string}
+   * @memberof Handling
+   */
+  public serialize(model: IModel): string
+  {
+    const serializer = new Serializer(new JsonEncoder());
+
+    if (!isEmpty(model.relationships)) {
+      return serializer.serialize(model.relationships);
     }
 
-    let data: ModelSignature = {
+    const data: { id: string | number, type?: string } = {
       id: NaN,
-      type: '',
+      type: undefined,
     };
-  
-    if (response.hasOwnProperty('id')) {
-      data.id = response.id;
+
+    if (model.hasOwnProperty('id')) {
+      data.id = model.id;
     }
 
-    data.type = response.type;
+    data.type = model.type || model.resourceName;
   
-    forEach(response.fields, field => {
-      if (!isUndefined(response.attributes[field])) {
-        data[field] = response.attributes[field];
+    forEach(model.fields, field => {
+      if (!isUndefined(model.attributes[field])) {
+        data[field] = model.attributes[field];
       }
     });
   
-    forEach(response.relationshipNames, name => {
-      if(!isEmpty(response[name])){
-        data[name] = response[name]['id'];
+    forEach(model.relationshipNames, name => {
+      if(!isEmpty(model[name])){
+        data[name] = model[name]['id'];
       }
     });
 
-    return serializer.serialize(data);
+    return serializer.serialize(data) as string;
   }
 
 }

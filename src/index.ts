@@ -1,5 +1,7 @@
-import {Model} from './ModelManagers/Model';
+export * from './ModelManagers/Model';
+export * from './ModelManagers/Handling';
+export * from './QueryManagers/QueryBuilder';
+export * from './QueryManagers/QueryModifier';
 
-export {
-  Model
-};
+export * from './Interfaces';
+
