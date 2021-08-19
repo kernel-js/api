@@ -1,5 +1,5 @@
 import { IModel } from "./IModel";
-import { IJsonApiResponse } from "./jsonApiStructure/IJsonAPIResponse";
+import { IJsonApiResponse } from "./jsonApiStructure";
 
 /**
  *

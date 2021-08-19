@@ -1,14 +1,17 @@
 import _ from 'lodash';
 import chai from 'chai';
 import Post from '../setup/Post';
+import Author from '../setup/Author';
 import { QueryBuilder } from '../../src';
 import { QueryModifier } from '../../src';
 import { Handling } from "../../src/ModelManagers/Handling";
 
+let author: Author = new Author();
 let post: Post = new Post(new QueryBuilder(), new QueryModifier(), new Handling());
 
 describe('Integration Tests - Model', () => {
   beforeEach('Recria a classe Post', () => {
+    author = new Author();
     post = new Post(new QueryBuilder(), new QueryModifier(), new Handling());
   });
 
@@ -295,4 +298,164 @@ describe('Integration Tests - Model', () => {
       id: 1
     });
   });
+
+  it('Attach', async () => {
+    post.id = 2;
+
+    const result = await post.attach([author]).getEntity();
+
+    chai.expect(result).to.deep.equal({
+      attributes: {
+        id: 1,
+        type: 'posts',
+        title: 'Suscipit ad voluptatum est aliquam omnis.'
+      },
+      relationships: { data: [{ "id": undefined,"type": "authors" }] },
+      queryBuilder: {
+        _query: '',
+        _includes: [],
+        _sort: [],
+        _filters: [],
+        _fields: [],
+        _pagination: { number: NaN, size: NaN }
+      },
+      queryModifier: {},
+      handling: {},
+      id: 1,
+      _config: {
+        method: 'PATCH',
+        url: 'http://localhost/api/posts/2/relationships/authors',
+        data: '{\"data\":[{\"type\":\"authors\"}]}',
+        headers: undefined
+      }
+    });
+  });
+
+  it('Detach', async () => {
+    post.id = 2;
+
+    const result = await post.detach([author]).getEntity();
+
+    chai.expect(result).to.deep.equal({
+      attributes: {
+      id: 1,
+      type: 'posts',
+      title: 'Suscipit ad voluptatum est aliquam omnis.'
+    },
+    relationships: { data: [ { "id": undefined,"type": "authors" } ] },
+    queryBuilder: {
+      _query: '',
+      _includes: [],
+      _sort: [],
+      _filters: [],
+      _fields: [],
+      _pagination: { number: NaN, size: NaN }
+    },
+    queryModifier: {},
+    handling: {},
+    id: 1,
+    _config: {
+      method: 'PATCH',
+      url: 'http://localhost/api/posts/2/relationships/authors',
+      data: '{\"data\":[]}',
+      headers: undefined
+    }
+    });
+  });
+
+  it('Create Pivot', async () => {
+    post.id = 3;
+
+    const result = await post.createPivot([author]).getEntity();
+
+    chai.expect(result).to.deep.equal({
+      attributes: {
+        id: 1,
+        type: 'posts',
+        title: 'Suscipit ad voluptatum est aliquam omnis.'
+      },
+      relationships: { data: [ { "id": undefined, "type": "authors" } ] },
+      queryBuilder: {
+        _query: '',
+        _includes: [],
+        _sort: [],
+        _filters: [],
+        _fields: [],
+        _pagination: { number: NaN, size: NaN }
+      },
+      queryModifier: {},
+      handling: {},
+      id: 1,
+      _config: {
+        method: 'POST',
+        url: 'http://localhost/api/posts/3/relationships/authors',
+        data: '{\"data\":[{\"type\":\"authors\"}]}',
+        headers: undefined
+      }
+    });
+  });
+
+  it('Delete Pivot', async () => {
+    post.id = 3;
+
+    const result = await post.deletePivot([author]).getEntity();
+
+    chai.expect(result).to.deep.equal({
+      attributes: {
+        id: 1,
+        type: 'posts',
+        title: 'Suscipit ad voluptatum est aliquam omnis.'
+      },
+      relationships: { data: [{ "id": undefined,"type": "authors" }] },
+      queryBuilder: {
+        _query: '',
+        _includes: [],
+        _sort: [],
+        _filters: [],
+        _fields: [],
+        _pagination: { number: NaN, size: NaN }
+      },
+      queryModifier: {},
+      handling: {},
+      id: 1,
+      _config: {
+        method: 'DELETE',
+        url: 'http://localhost/api/posts/3/relationships/authors',
+        data: '{\"data\":[{\"type\":\"authors\"}]}',
+        headers: undefined
+      }
+    });
+  });
+
+  it('Excluir', async () => {
+
+    const result = await post.delete(1).getEntity();
+
+    chai.expect(result).to.deep.equal({
+      attributes: {
+        id: 1,
+        type: 'posts',
+        title: 'Suscipit ad voluptatum est aliquam omnis.'
+      },
+      relationships: {},
+      queryBuilder: {
+        _query: '',
+        _includes: [],
+        _sort: [],
+        _filters: [],
+        _fields: [],
+        _pagination: { number: NaN, size: NaN }
+      },
+      queryModifier: {},
+      handling: {},
+      id: 1,
+      _config: {
+        method: 'DELETE',
+        url: 'http://localhost/api/posts/1',
+        data: undefined,
+        headers: undefined,
+      }
+    });
+  });
+
 });
