@@ -47,7 +47,7 @@ export class QueryModifier implements IQueryModifier {
   public orderBy(columns: Array<string>, direction: 'asc' | 'desc'): string[]
   {
     if (!direction.includes('asc') && !direction.includes('desc')) {
-      throw new TypeError(`Argument 2 invalid`, 500);
+      throw new TypeError(`Argument 2 invalid`, 400);
     }
 
     if (direction === 'desc') {

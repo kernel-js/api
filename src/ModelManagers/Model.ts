@@ -23,33 +23,6 @@ export abstract class Model implements IModel {
   /**
    *
    *
-   * @protected
-   * @type {Handling}
-   * @memberof Model
-   */
-  protected handling: IHandling;
-
-  /**
-   *
-   *
-   * @protected
-   * @type {QueryModifier}
-   * @memberof Model
-   */
-  protected queryModifier: IQueryModifier;
-
-  /**
-   *
-   *
-   * @protected
-   * @type {IQueryBuilder}
-   * @memberof Model
-   */
-  protected queryBuilder: IQueryBuilder;
-
-  /**
-   *
-   *
    * @type {(number | string)}
    * @memberof Model
    */
@@ -122,15 +95,15 @@ export abstract class Model implements IModel {
   /**
    * Creates an instance of Model.
    * @param {IQueryBuilder} queryBuilder
-   * @param {QueryModifier} queryModifier
-   * @param {Handling} handling
+   * @param {IQueryModifier} queryModifier
+   * @param {IHandling} handling
    * @memberof Model
    */
-  constructor(queryBuilder: IQueryBuilder, queryModifier: IQueryModifier, handling: IHandling) {
-    this.queryBuilder = queryBuilder;
-    this.queryModifier = queryModifier;
-    this.handling = handling;
-  }
+  constructor(
+    protected queryBuilder: IQueryBuilder,
+    protected queryModifier: IQueryModifier,
+    protected handling: IHandling
+    ){}
 
   /**
    *
@@ -268,7 +241,7 @@ export abstract class Model implements IModel {
    */
   public find(id: number | string): this {
     if (!id) {
-      throw new TypeError(`Id argument is required.`, 500)
+      throw new TypeError(`Id argument is required.`, 400)
     }
 
     if (typeof id !== 'number' && typeof id !== 'string') {
@@ -400,7 +373,7 @@ export abstract class Model implements IModel {
    */
   public update(id: number | string): this {
     if (!id) {
-      throw new TypeError(`Id argument is required.`, 500)
+      throw new TypeError(`Id argument is required.`, 400)
     }
 
     if (typeof id !== 'number' && typeof id !== 'string') {
@@ -422,7 +395,7 @@ export abstract class Model implements IModel {
     this.id = id || this.id; // Preference parameter
 
     if (!this.id) {
-      throw new TypeError(`Id argument is required in model or passed as parameter.`, 500)
+      throw new TypeError(`Id argument is required in model or passed as parameter.`, 400)
     }
 
     if (typeof this.id !== 'number' && typeof this.id !== 'string') {
@@ -447,7 +420,7 @@ export abstract class Model implements IModel {
    */
   public paginate(perPage: number, page: number): Promise<any> {
     if (!perPage || !page) {
-      throw new TypeError(`Arguments PerPage and Page is required.`, 500)
+      throw new TypeError(`Arguments PerPage/Page is required.`, 400)
     }
 
     if (typeof perPage !== 'number') {

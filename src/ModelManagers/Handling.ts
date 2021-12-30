@@ -10,42 +10,6 @@ import { Serializer, JsonEncoder, JsonApiNormalizer, DateNormalizer } from '@ker
  * @implements {IHandling}
  */
 export class Handling implements IHandling {
-  
-  /**
-   *
-   *
-   * @private
-   * @template T
-   * @param {T} model
-   * @param {*} respond
-   * @return {*}  {T}
-   * @memberof Handling
-   */
-  private _hydrate<T extends IModel>(model: T, respond: any): T
-  {
-    model.id = respond.id;
-    model.attributes = Object.assign(clone(model.attributes), respond)
-
-    return model
-  }
-
-  /**
-   *
-   *
-   * @private
-   * @template T
-   * @param {T} model
-   * @param {*} respond
-   * @return {*}  {T[]}
-   * @memberof Handling
-   */
-  private _hydrateCollection<T extends IModel>(model: T, respond: any): T[]
-  {
-    return Object.values(respond).map((value: any) => {
-      return this._hydrate(clone(model), value);
-    });
-  }
-
   /**
    *
    *
@@ -119,4 +83,38 @@ export class Handling implements IHandling {
     return serializer.serialize(data) as string;
   }
 
+  /**
+   *
+   *
+   * @private
+   * @template T
+   * @param {T} model
+   * @param {*} respond
+   * @return {*}  {T}
+   * @memberof Handling
+   */
+   private _hydrate<T extends IModel>(model: T, respond: any): T
+   {
+     model.id = respond.id;
+     model.attributes = Object.assign(clone(model.attributes), respond)
+ 
+     return model
+   }
+ 
+   /**
+    *
+    *
+    * @private
+    * @template T
+    * @param {T} model
+    * @param {*} respond
+    * @return {*}  {T[]}
+    * @memberof Handling
+    */
+   private _hydrateCollection<T extends IModel>(model: T, respond: any): T[]
+   {
+     return Object.values(respond).map((value: any) => {
+       return this._hydrate(clone(model), value);
+     });
+   }
 }
